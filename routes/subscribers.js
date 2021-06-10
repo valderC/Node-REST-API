@@ -1,3 +1,4 @@
+const { json } = require('express');
 const express = require('express'); 
 const router = express.Router(); 
 const Subsriber = require('../models/subscriber'); 
@@ -23,6 +24,11 @@ router.get('/:subId', async (req, res) => {
     }
 }); 
 
+//alt route defintion using middlware ! 
+router.get('./subId', getSubscriber, (req, res) => {
+    res.json(res.getSubriber); 
+}); 
+
 //Creating a Subsriber 
 router.post('/', async (req, res) => {
     try {
@@ -38,29 +44,53 @@ router.post('/', async (req, res) => {
 }); 
 
 //Updating a Subsriber one 
-router.put('/:SubId', async (req, res) => {
-    try{
-    const updatedSub = await Subsriber.updateOne(
-        {_id: req.params.subId}, 
-        {$set: {user: req.body.user}});
-        res.json(updatedSub);  
+router.patch('/:SubId', getSubsriber, async (req, res) => {
+    if (req.body.name){
+        res.getSubriber.name = req.body.name; 
     }
-    catch(err){
-        res.status(500).json({message: err})
+    if (req.body.subscribedToChannel){
+        res.getSubriber.subscribedToChannel = req.body.subscribedToChannel; 
     }
+    try {
+        const updatedSub = await res.subscriber.save(); 
+        res.json(updatedSub); 
+        
+    }catch(err){
+        res.status(400).json({message: err}); 
+    }
+   
 }); 
 
 //Deleting a Subsriber one
-router.delete('/:subId', async (req, res) => {
+router.delete('/:subId', getSubriber, async (req, res) => {
     try{
-    const deletedSub = await Subsriber.remove({_id: req.params.subId}); 
+    const deletedSub = await res.subscriber.remove(); 
     res.json(deletedSub); 
     }
     catch(err){
         res.status(500).json({message: err})
     }
-
 }); 
+
+//middleware to get the subsriber 
+async function getSubscriber (req, res, next){
+    let subsriber; 
+    try {
+        subsriber = await Subsriber.findById(req.params.subId); 
+        if (!subscriber){
+            //status code where we could not find a resource 
+            //in this case a subsriber 
+            return res.status(404).json({message: 'can not find subsriber!'}); 
+        }
+    }catch(err){
+        //status code 500 
+        //issue with our server causing the problem 
+        return res.status(500).json({message: err}); 
+    }
+    //creating a variable on our responce object which we can then call later
+    res.subscriber = subsriber; 
+    next(); 
+}
 
 
 module.exports = router; 
